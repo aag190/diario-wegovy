@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Diario Wegovy</title>
+<meta name="description" content="Diario personal del tratamiento con Wegovy: inyecciones, peso y revisiones.">
+<meta name="theme-color" content="#2c3fb3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Wegovy">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: una columna de diario clínico para móvil; resumen arriba, gráfica, historial; barra de acciones fija abajo */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --ink:#16213a; --muted:#5d6880; --line:#dde2ea;
+  --accent:#2c3fb3; --accent-soft:#e6e9fa; --accent-ink:#ffffff;
+  --rev:#b4532a; --rev-soft:#fbeadf; --ok:#1f7a4d; --ok-soft:#e1f3e9; --warn:#a15c00; --warn-soft:#fdf0d8;
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", -apple-system, system-ui, sans-serif;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1322; --surface:#171d30; --ink:#e7eaf4; --muted:#9aa3bb; --line:#2a3250;
+  --accent:#8c9cff; --accent-soft:#242c55; --accent-ink:#0e1322;
+  --rev:#f0a07a; --rev-soft:#3a2418; --ok:#6fd3a0; --ok-soft:#173326; --warn:#f2bb63; --warn-soft:#3a2c12; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1322; --surface:#171d30; --ink:#e7eaf4; --muted:#9aa3bb; --line:#2a3250;
+  --accent:#8c9cff; --accent-soft:#242c55; --accent-ink:#0e1322;
+  --rev:#f0a07a; --rev-soft:#3a2418; --ok:#6fd3a0; --ok-soft:#173326; --warn:#f2bb63; --warn-soft:#3a2c12; color-scheme:dark}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;-webkit-text-size-adjust:100%;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 120px}
+main{max-width:560px;margin:0 auto;display:grid;gap:18px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:1.7rem;font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.1rem;font-weight:700}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;padding-top:6px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.next{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;font-size:.8rem;font-weight:700;white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.info{background:var(--accent-soft);color:var(--accent)} .chip.rev{background:var(--rev-soft);color:var(--rev)}
+.hero{display:grid;gap:14px}
+.big{font-family:var(--display);font-size:3rem;font-weight:700;line-height:1}
+.big small{font-size:1.1rem;font-weight:500;color:var(--muted);margin-left:4px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.stat{border-top:1px solid var(--line);padding-top:8px;min-width:0}
+.stat b{display:block;font-size:1.15rem;font-family:var(--display)}
+.chartwrap{position:relative}
+canvas#chart{width:100%;height:230px;display:block}
+.list{display:grid;gap:0}
+.row{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 4px;border-top:1px solid var(--line);
+  background:none;border-left:0;border-right:0;border-bottom:0;text-align:left;color:inherit;font:inherit;cursor:pointer;width:100%}
+.row:first-child{border-top:0}
+.row:hover{background:var(--accent-soft)}
+.date{font-variant-numeric:tabular-nums;line-height:1.15}
+.date b{font-family:var(--display);font-size:1.25rem;display:block}
+.date span{font-size:.75rem;color:var(--muted)}
+.rmain{min-width:0;display:grid;gap:4px}
+.rmain .chips{display:flex;gap:6px;flex-wrap:wrap}
+.obs{font-size:.85rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.rval{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.rval span{display:block;font-weight:400;font-size:.8rem;color:var(--muted)}
+button,.btn{font:inherit;font-weight:700;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:12px 14px;cursor:pointer}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.danger{color:var(--rev);border-color:var(--rev)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.55;cursor:default}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
+  padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.bar div{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.bar button{padding:12px 6px;font-size:.92rem}
+details.card summary{cursor:pointer;font-family:var(--display);font-weight:700;font-size:1.05rem;list-style:none;display:flex;justify-content:space-between;gap:8px}
+details.card summary::after{content:"+";color:var(--muted)} details[open].card summary::after{content:"–"}
+ol.steps{padding-left:1.2em;margin:12px 0 0;display:grid;gap:10px}
+ol.steps li{padding-left:4px}
+code,.mono{font-family:ui-monospace,Menlo,monospace;font-size:.85em;background:var(--accent-soft);padding:1px 5px;border-radius:5px;word-break:break-word}
+/* Hoja de registro */
+.scrim{position:fixed;inset:0;background:rgba(10,14,30,.45);z-index:30}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:31;max-height:92%;overflow:auto;background:var(--surface);border-radius:20px 20px 0 0;
+  padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sheet form{max-width:560px;margin:0 auto;display:grid;gap:14px}
+.sheet .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+label{display:grid;gap:5px;font-weight:700;font-size:.9rem}
+input,select,textarea{font:inherit;font-size:16px;font-weight:400;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-width:0}
+textarea{min-height:70px;resize:vertical}
+.toggles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tg{position:relative}
+.tg input{position:absolute;opacity:0;pointer-events:none}
+.tg span{display:block;text-align:center;padding:10px 4px;border:1px solid var(--line);border-radius:10px;font-weight:700;font-size:.9rem;cursor:pointer}
+.tg input:checked+span{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tg input:focus-visible+span{outline:3px solid var(--accent);outline-offset:2px}
+.grp{display:grid;gap:10px;padding:12px;border:1px dashed var(--line);border-radius:12px}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.zepp{background:var(--accent-soft);border-radius:10px;padding:10px;display:grid;gap:6px}
+.zepp small{font-weight:400;color:var(--muted)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.actions button{flex:1 1 auto}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:40;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:99px;font-weight:700;font-size:.9rem;max-width:90%}
+.empty{padding:18px 4px;color:var(--muted)}
+.notice{background:var(--warn-soft);color:var(--warn);border-radius:12px;padding:12px;font-weight:700}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .22s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.6}}}
+
+[hidden]{display:none!important}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:25;background:var(--bg)}
+.zrow{display:flex;gap:8px}.zrow input{flex:1}.zrow button{padding:10px 12px;white-space:nowrap}
+.filebtn{position:relative;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;flex:1 1 auto}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.filebtn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <div class="eyebrow">Diario de tratamiento · semaglutida</div>
+      <h1>Diario Wegovy</h1>
+    </div>
+    <div class="muted" id="paciente">Cargando…</div>
+  </header>
+
+  <div class="notice" id="aviso" hidden></div>
+  <section class="card" id="bienvenida" hidden>
+    <h2>Empieza cargando tu copia</h2>
+    <p class="muted">Tus datos se guardan solo en este iPhone. Si tienes el archivo de copia con tus registros, cárgalo aquí. Si no, empieza a anotar con los botones de abajo.</p>
+    <label class="btn filebtn primary" for="impBienvenida">Cargar archivo de copia<input type="file" id="impBienvenida" accept=".json,application/json"></label>
+  </section>
+
+  <section class="card next" aria-live="polite">
+    <div>
+      <div class="eyebrow">Próxima inyección</div>
+      <h2 id="proxima">–</h2>
+      <div class="muted" id="dosisAct">Sin inyecciones registradas todavía</div>
+    </div>
+    <span class="chip info" id="proxChip" hidden></span>
+  </section>
+
+  <section class="card hero">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap">
+      <div>
+        <div class="eyebrow">Peso actual</div>
+        <div class="big num" id="pesoAct">–<small>kg</small></div>
+        <div class="muted" id="pesoFecha">Añade tu primer peso con el botón “Peso”.</div>
+      </div>
+      <span class="chip ok" id="perdChip" hidden></span>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="eyebrow">Perdido</span><b class="num" id="sPerd">–</b><span class="muted" id="sPerdPct"></span></div>
+      <div class="stat"><span class="eyebrow">IMC</span><b class="num" id="sImc">–</b><span class="muted" id="sImcIni"></span></div>
+      <div class="stat"><span class="eyebrow">Cintura</span><b class="num" id="sCin">–</b><span class="muted" id="sCinF"></span></div>
+    </div>
+    <div class="chartwrap"><canvas id="chart" role="img" aria-label="Gráfica de evolución del peso"></canvas></div>
+  </section>
+
+  <section class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <div>
+        <h2>Excel para enfermería</h2>
+        <div class="muted" style="font-size:.9rem">Resumen, registro completo y gráfica. Se abre el menú Compartir para enviarlo o guardarlo en Archivos.</div>
+      </div>
+      <button class="primary" id="btnExcel" type="button">Descargar Excel</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+      <h2>Historial</h2><span class="muted num" id="nreg"></span>
+    </div>
+    <div class="list" id="lista"><div class="empty">Aquí aparecerán tus inyecciones, pesos y revisiones. Toca un registro para corregirlo.</div></div>
+  </section>
+
+  <details class="card" id="instalar">
+    <summary>Instalar en el iPhone</summary>
+    <ol class="steps">
+      <li>Abre esta página en <b>Safari</b>.</li>
+      <li>Toca el botón <i>Compartir</i> (el cuadrado con la flecha) y elige <i>Añadir a pantalla de inicio</i>.</li>
+      <li>Abre el diario desde el nuevo icono “Wegovy”. Se abre a pantalla completa y funciona sin conexión.</li>
+    </ol>
+  </details>
+
+  <details class="card" id="ayudaZepp">
+    <summary>Conectar con Zepp Life</summary>
+    <p class="muted">La báscula guarda el peso en Zepp Life, y Zepp Life puede enviarlo a la app Salud. Un atajo copia el último peso desde Salud y el diario lo pega con un toque.</p>
+    <ol class="steps">
+      <li><b>Permite que Zepp Life escriba en Salud.</b> Abre la app Salud, toca tu foto arriba a la derecha, ve a <i>Apps</i> → <i>Zepp Life</i> y activa <i>Peso</i>. Pésate una vez y comprueba que el peso aparece en Salud.</li>
+      <li><b>Crea el atajo.</b> Abre la app Atajos, toca <i>+</i> y añade estas acciones en orden:
+        <ul style="margin:6px 0 0;padding-left:1.1em;display:grid;gap:4px">
+          <li><i>Buscar muestras de salud</i>: tipo <i>Peso</i>, ordenar por <i>Fecha de inicio</i>, <i>Más reciente primero</i>, límite <i>1</i>.</li>
+          <li><i>Texto</i>: escribe <code>ZEPP;</code>, inserta la variable <i>Muestras de salud</i>, escribe <code>;</code> e inserta <i>Fecha de inicio</i> (toca la variable y elige formato <i>ISO 8601</i>).</li>
+          <li><i>Copiar al portapapeles</i>.</li>
+        </ul>
+        Llámalo “Peso a Wegovy”.</li>
+      <li><b>Hazlo automático.</b> En Atajos → <i>Automatización</i> → <i>+</i> → <i>App</i>, elige Zepp Life y <i>Se cierra</i>, marca <i>Ejecutar inmediatamente</i> y elige el atajo. Así, al cerrar Zepp Life después de pesarte, el peso queda copiado.</li>
+      <li><b>Pégalo en el diario.</b> Abre esta app, toca <i>+ Peso</i> y luego <i>Pegar de Zepp</i>. El iPhone te pedirá permiso para pegar; acepta y el peso y la fecha se rellenan solos.</li>
+    </ol>
+  </details>
+
+  <details class="card">
+    <summary>Copia de seguridad</summary>
+    <p class="muted">Los datos viven solo en este iPhone. Guarda una copia de vez en cuando en Archivos o iCloud Drive: si borras la app o cambias de teléfono, podrás recuperarlos.</p>
+    <div class="actions">
+      <button type="button" id="btnCopia">Guardar copia</button>
+      <label class="btn filebtn" for="impCopia">Cargar copia<input type="file" id="impCopia" accept=".json,application/json"></label>
+    </div>
+    <div class="muted" id="copiaInfo" style="font-size:.85rem;margin-top:8px"></div>
+    <div class="notice" id="impConfirm" hidden style="margin-top:10px">
+      <div id="impTexto"></div>
+      <div class="actions" style="margin-top:8px"><button type="button" class="danger" id="impSi">Sí, sustituir</button><button type="button" id="impNo">Cancelar</button></div>
+    </div>
+  </details>
+
+  <details class="card" id="cfgBox">
+    <summary>Datos del paciente</summary>
+    <form id="cfgForm" style="display:grid;gap:12px;margin-top:12px">
+      <label for="cfgNombre">Nombre<input id="cfgNombre" autocomplete="name"></label>
+      <label for="cfgTalla">Talla (cm)<input id="cfgTalla" type="number" inputmode="numeric" min="100" max="230" step="1"></label>
+      <button class="primary" type="submit">Guardar datos</button>
+    </form>
+  </details>
+</main>
+
+<nav class="bar" aria-label="Añadir registro"><div>
+  <button class="primary" type="button" data-nuevo="iny">+ Inyección</button>
+  <button type="button" data-nuevo="peso">+ Peso</button>
+  <button type="button" data-nuevo="rev">+ Revisión</button>
+</div></nav>
+
+<div class="scrim" id="scrim" hidden></div>
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="fTitulo">
+  <form id="fRec" novalidate>
+    <div class="top"><h2 id="fTitulo">Nuevo registro</h2><button type="button" id="fCerrar" aria-label="Cerrar">Cerrar</button></div>
+    <label for="fFecha">Fecha<input id="fFecha" type="date" required></label>
+    <div class="toggles" role="group" aria-label="Qué quieres anotar">
+      <label class="tg" for="tIny"><input type="checkbox" id="tIny"><span>Inyección</span></label>
+      <label class="tg" for="tPeso"><input type="checkbox" id="tPeso"><span>Peso</span></label>
+      <label class="tg" for="tRev"><input type="checkbox" id="tRev"><span>Revisión</span></label>
+    </div>
+    <div class="grp" id="gIny">
+      <div class="two">
+        <label for="fDosis">Dosis (mg)<select id="fDosis"><option>0.25</option><option selected>0.5</option><option>1</option><option>1.7</option><option>2.4</option></select></label>
+        <label for="fClics">Clics<input id="fClics" type="number" inputmode="numeric" min="0" step="1"></label>
+      </div>
+    </div>
+    <div class="grp" id="gPeso">
+      <label class="zepp" for="fZepp">Dato de Zepp Life
+        <span class="zrow"><input id="fZepp" placeholder="O mantén pulsado y Pegar" autocomplete="off"><button type="button" id="btnPegar">Pegar de Zepp</button></span>
+        <small id="zeppMsg">Usa el atajo “Peso a Wegovy” o escribe el peso abajo.</small>
+      </label>
+      <div class="two">
+        <label for="fPeso">Peso (kg)<input id="fPeso" type="number" inputmode="decimal" step="0.05" min="30" max="300"></label>
+        <label for="fCin">Cintura (cm)<input id="fCin" type="number" inputmode="decimal" step="0.5" min="40" max="250" placeholder="Opcional"></label>
+      </div>
+    </div>
+    <div class="grp" id="gRev">
+      <label for="fLugar">Dónde<select id="fLugar"><option>Centro de Salud</option><option>Llamada de enfermería</option><option>Consulta médica</option><option>Hospital</option></select></label>
+    </div>
+    <label for="fObs">Observaciones<textarea id="fObs" placeholder="Síntomas, cambios de día, aguja nueva…"></textarea></label>
+    <div class="actions">
+      <button class="primary" type="submit" id="fGuardar">Guardar</button>
+      <button type="button" class="danger" id="fBorrar" hidden>Borrar</button>
+    </div>
+    <div class="notice" id="fConfirm" hidden>
+      <div>¿Borrar este registro? No se puede deshacer.</div>
+      <div class="actions" style="margin-top:8px"><button type="button" class="danger" id="fBorrarSi">Sí, borrar</button><button type="button" id="fBorrarNo">No</button></div>
+    </div>
+  </form>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="core.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const st={recs:[],cfg:{nombre:"",talla:null},editId:null,cargado:false};
+const KEY="diarioWegovy.v1";
+function cargar(){ try{ const j=JSON.parse(localStorage.getItem(KEY)||"null"); if(j){ st.recs=j.recs||[]; st.cfg=j.cfg||st.cfg; st.copia=j.copia||null; } }catch(e){} st.cargado=true; }
+function guardar(){ try{ localStorage.setItem(KEY,JSON.stringify({v:1,recs:st.recs,cfg:st.cfg,copia:st.copia||null})); return true; }catch(e){ toast("No se pudo guardar en este iPhone"); return false; } }
+function nuevoId(){ return (crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)); }
+async function compartirArchivo(nombre,blob,tipo){
+  const f=new File([blob],nombre,{type:tipo});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f],title:nombre}); return "ok"; }catch(e){ if(e&&e.name==="AbortError") return "cancel"; } }
+  const u=URL.createObjectURL(blob), a=document.createElement("a"); a.href=u; a.download=nombre; document.body.append(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),4000); return "ok";
+}
+
+function toast(t){ const el=$("toast"); el.textContent=t; el.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>el.hidden=true,2600); }
+function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+/* ---------- Gráfica ---------- */
+function dibujar(canvas,pesos,{w,h,dpr,col,font}){
+  canvas.width=w*dpr; canvas.height=h*dpr; const c=canvas.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+  c.fillStyle=col.bg; c.fillRect(0,0,w,h);
+  if(pesos.length<1){ c.fillStyle=col.muted; c.font=`15px ${font}`; c.fillText("Sin pesos todavía",16,h/2); return; }
+  const L=44,R=18,T=16,Bm=30, xs=pesos.map(p=>dayNum(p.fecha)), ys=pesos.map(p=>p.peso);
+  let x0=Math.min(...xs), x1=Math.max(...xs); if(x1===x0){x0-=7;x1+=7;}
+  let y0=Math.floor(Math.min(...ys)-1.5), y1=Math.ceil(Math.max(...ys)+1.5);
+  const step=(y1-y0)>12?4:2; y0=Math.floor(y0/step)*step; y1=Math.ceil(y1/step)*step;
+  const X=v=>L+(v-x0)/(x1-x0)*(w-L-R), Y=v=>T+(y1-v)/(y1-y0)*(h-T-Bm);
+  c.font=`12px ${font}`; c.textBaseline="middle"; c.lineWidth=1;
+  for(let v=y0;v<=y1;v+=step){ c.strokeStyle=col.grid; c.beginPath(); c.moveTo(L,Y(v)); c.lineTo(w-R,Y(v)); c.stroke(); c.fillStyle=col.muted; c.textAlign="right"; c.fillText(String(v),L-8,Y(v)); }
+  c.textAlign="center"; c.textBaseline="top";
+  const meses=[]; { const d0=new Date(x0*864e5); let y=d0.getUTCFullYear(), m=d0.getUTCMonth()+1; for(;;){ const n=Date.UTC(y,m,1)/864e5; if(n>x1) break; meses.push(n); m++; if(m>11){m=0;y++;} } }
+  meses.forEach(n=>{ c.strokeStyle=col.grid; c.beginPath(); c.moveTo(X(n),T); c.lineTo(X(n),h-Bm); c.stroke(); c.fillStyle=col.muted; c.fillText(MESES[new Date(n*864e5).getUTCMonth()],X(n),h-Bm+8); });
+  const g=c.createLinearGradient(0,T,0,h-Bm); g.addColorStop(0,col.area); g.addColorStop(1,"rgba(0,0,0,0)");
+  c.beginPath(); pesos.forEach((p,i)=>{const px=X(xs[i]),py=Y(p.peso); i?c.lineTo(px,py):c.moveTo(px,py);}); c.lineTo(X(xs[xs.length-1]),h-Bm); c.lineTo(X(xs[0]),h-Bm); c.closePath(); c.fillStyle=g; c.fill();
+  c.beginPath(); pesos.forEach((p,i)=>{const px=X(xs[i]),py=Y(p.peso); i?c.lineTo(px,py):c.moveTo(px,py);}); c.strokeStyle=col.line; c.lineWidth=2.5; c.lineJoin="round"; c.stroke();
+  pesos.forEach((p,i)=>{ const last=i===pesos.length-1; c.beginPath(); c.arc(X(xs[i]),Y(p.peso),last?6:4,0,7);
+    c.fillStyle=p.revision?col.rev:(last?col.line:col.bg); c.fill(); c.lineWidth=2; c.strokeStyle=p.revision?col.rev:col.line; c.stroke(); });
+  const lp=pesos[pesos.length-1]; c.fillStyle=col.ink; c.font=`700 13px ${font}`; c.textBaseline="bottom"; c.textAlign=X(xs[xs.length-1])>w-70?"right":"center";
+  c.fillText(fmtNum(lp.peso,1)+" kg",Math.min(X(xs[xs.length-1]),w-R),Y(lp.peso)-9);
+}
+function dibujarPantalla(pesos){
+  const cv=$("chart"), w=cv.clientWidth||340;
+  dibujar(cv,pesos,{w,h:230,dpr:window.devicePixelRatio||1,font:"Atkinson Hyperlegible, system-ui, sans-serif",
+    col:{bg:css("--surface"),grid:css("--line"),muted:css("--muted"),ink:css("--ink"),line:css("--accent"),rev:css("--rev"),area:css("--accent-soft")}});
+}
+function graficaPng(pesos){
+  const cv=document.createElement("canvas");
+  dibujar(cv,pesos,{w:760,h:400,dpr:2,font:"Arial, sans-serif",col:{bg:"#ffffff",grid:"#dde2ea",muted:"#5d6880",ink:"#16213a",line:"#1f4e78",rev:"#c55a11",area:"rgba(31,78,120,0.14)"}});
+  const c=cv.getContext("2d"); c.setTransform(2,0,0,2,0,0); c.fillStyle="#16213a"; c.font="700 15px Arial"; c.textAlign="left"; c.textBaseline="top";
+  return cv.toDataURL("image/png").split(",")[1];
+}
+
+/* ---------- Pintar ---------- */
+let pintar=function(){
+  const s=calcular(st.recs,st.cfg);
+  $("paciente").innerHTML=""; const pn=document.createElement("div"); pn.textContent=st.cfg.nombre||"Paciente"; pn.style.fontWeight="700"; pn.style.color="var(--ink)";
+  const ps=document.createElement("div"); ps.className="num"; ps.textContent=(s.inicio&&s.ultimo)?`Semana ${s.semana(todayIso()>s.ultimo?todayIso():s.ultimo)} de tratamiento`:""; $("paciente").append(pn,ps);
+  // próxima inyección
+  if(s.proxima){
+    const dif=dayNum(s.proxima)-dayNum(todayIso()), ch=$("proxChip");
+    $("proxima").textContent=fmtFecha(s.proxima,{weekday:true}).replace(/^./,x=>x.toUpperCase());
+    $("dosisAct").textContent=`${fmtNum(s.dosisActual,2).replace(/0$/,"")} mg${s.clicsActual?` · ${s.clicsActual} clics`:""} · última el ${fmtFecha(s.ultIny.fecha,{weekday:true})}`;
+    ch.hidden=false; ch.className="chip "+(dif<0?"warn":dif===0?"ok":"info");
+    ch.textContent= dif<0?`Atrasada ${-dif} ${-dif===1?"día":"días"}`: dif===0?"Toca hoy": dif===1?"Mañana":`En ${dif} días`;
+  }
+  // peso
+  if(s.act){
+    $("pesoAct").innerHTML=""; $("pesoAct").append(fmtNum(s.act.peso,s.act.peso%1&&String(s.act.peso).split(".")[1]?.length>1?2:1)); const sm=document.createElement("small"); sm.textContent="kg"; $("pesoAct").append(sm);
+    $("pesoFecha").textContent=`${fmtFecha(s.act.fecha,{weekday:true})}${s.act.origen==="Zepp Life"?" · desde Zepp Life":""}`;
+    if(s.perdida!=null&&s.pesos.length>1){ $("sPerd").textContent=fmtNum(s.perdida,1)+" kg"; $("sPerdPct").textContent=fmtNum(s.perdidaPct*100,1)+" % desde "+fmtFecha(s.ini.fecha);
+      const pc=$("perdChip"); if(s.var4!=null){ pc.hidden=false; pc.className="chip "+(s.var4<=0?"ok":"warn"); pc.textContent=`${s.var4<=0?"−":"+"}${fmtNum(Math.abs(s.var4),1)} kg en 4 semanas`; } }
+    if(s.talla){ $("sImc").textContent=fmtNum(s.imc(s.act.peso),1); $("sImcIni").textContent=s.ini?`inicio ${fmtNum(s.imc(s.ini.peso),1)}`:""; }
+    else { $("sImc").textContent="–"; $("sImcIni").textContent="Añade la talla"; }
+  }
+  if(s.cinAct){ $("sCin").textContent=fmtNum(s.cinAct.cintura,0)+" cm"; $("sCinF").textContent=fmtFecha(s.cinAct.fecha); } else { $("sCin").textContent="–"; $("sCinF").textContent="Sin medir"; }
+  dibujarPantalla(s.pesos);
+  // historial
+  const L=$("lista"); L.innerHTML="";
+  $("nreg").textContent=s.recs.length?`${s.recs.length} registros`:"";
+  if(!s.recs.length){ const e=document.createElement("div"); e.className="empty"; e.textContent= st.cargado?"Todavía no hay registros. Usa los botones de abajo para añadir el primero.":"Cargando tus registros…"; L.append(e); }
+  [...s.recs].reverse().forEach(r=>{
+    const b=document.createElement("button"); b.type="button"; b.className="row"; b.onclick=()=>abrir(null,r);
+    const d=document.createElement("div"); d.className="date";
+    if(r.fecha){ const [y,m,dd]=r.fecha.split("-").map(Number); d.innerHTML=`<b>${dd}</b><span>${MESES[m-1]} · ${diaSemana(r.fecha).slice(0,3)}</span>`; } else d.innerHTML=`<b>¿?</b><span>sin fecha</span>`;
+    const mn=document.createElement("div"); mn.className="rmain"; const chs=document.createElement("div"); chs.className="chips";
+    const add=(t,c)=>{const x=document.createElement("span"); x.className="chip "+c; x.textContent=t; chs.append(x);};
+    if(esInyeccion(r)) add(`${fmtNum(r.dosis,2).replace(/0$/,"")} mg${r.clics?` · ${r.clics} clics`:""}`,"info");
+    if(r.revision) add(r.lugar||"Revisión","rev");
+    if(r.origen==="Zepp Life") add("Zepp Life","ok");
+    mn.append(chs);
+    if(r.obs){ const o=document.createElement("div"); o.className="obs"; o.textContent=r.obs; mn.append(o); }
+    const v=document.createElement("div"); v.className="rval";
+    if(tienePeso(r)) v.textContent=fmtNum(r.peso,2).replace(/0$/,"")+" kg";
+    if(r.cintura){ const sp=document.createElement("span"); sp.textContent=`cintura ${fmtNum(r.cintura,0)} cm`; v.append(sp); }
+    if(r.fecha&&s.inicio){ const sp=document.createElement("span"); sp.textContent=`sem. ${s.semana(r.fecha)}`; v.append(sp); }
+    b.append(d,mn,v); L.append(b);
+  });
+  $("cfgNombre").value=st.cfg.nombre||""; $("cfgTalla").value=st.cfg.talla||"";
+}
+
+/* ---------- Formulario ---------- */
+function sync(){ $("gIny").hidden=!$("tIny").checked; $("gPeso").hidden=!$("tPeso").checked; $("gRev").hidden=!$("tRev").checked; }
+["tIny","tPeso","tRev"].forEach(id=>$(id).addEventListener("change",sync));
+function abrir(tipo,rec){
+  const s=calcular(st.recs,st.cfg); st.editId=rec?rec.id:null; st.zepp=false;
+  $("fTitulo").textContent=rec?"Editar registro":tipo==="iny"?"Nueva inyección":tipo==="peso"?"Nuevo peso":"Nueva revisión";
+  $("fFecha").value=rec?(rec.fecha||""):todayIso();
+  $("tIny").checked=rec?esInyeccion(rec):tipo==="iny"; $("tPeso").checked=rec?tienePeso(rec)||!!rec.cintura:tipo!=="iny"; $("tRev").checked=rec?!!rec.revision:tipo==="rev";
+  $("fDosis").value=String(rec&&esInyeccion(rec)?rec.dosis:(s.dosisActual??0.5));
+  $("fClics").value=rec&&esInyeccion(rec)?(rec.clics??""):(s.clicsActual??"");
+  $("fPeso").value=rec&&tienePeso(rec)?rec.peso:""; $("fCin").value=rec&&rec.cintura?rec.cintura:"";
+  $("fLugar").value=rec&&rec.revision&&rec.lugar?rec.lugar:"Centro de Salud";
+  $("fObs").value=rec?(rec.obs||""):""; $("fZepp").value=""; $("zeppMsg").textContent="Ejecuta antes el atajo “Peso a Wegovy”. También puedes escribir el peso abajo.";
+  $("fBorrar").hidden=!rec; $("fConfirm").hidden=true; sync();
+  $("scrim").hidden=false; $("sheet").hidden=false; $("sheet").scrollTop=0;
+}
+function cerrar(){ $("scrim").hidden=true; $("sheet").hidden=true; st.editId=null; }
+$("fCerrar").onclick=cerrar; $("scrim").onclick=cerrar;
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&!$("sheet").hidden) cerrar(); });
+document.querySelectorAll("[data-nuevo]").forEach(b=>b.onclick=()=>abrir(b.dataset.nuevo,null));
+
+function aplicarZepp(txt){
+  const z=parseZepp(txt); if(!z){ $("zeppMsg").textContent="No encuentro un peso en lo pegado. Escríbelo abajo."; return; }
+  $("fPeso").value=z.peso; if(z.fecha) $("fFecha").value=z.fecha; $("tPeso").checked=true; sync(); st.zepp=true;
+  $("zeppMsg").textContent=`Importado: ${fmtNum(z.peso,2)} kg${z.fecha?` · ${fmtFecha(z.fecha,{year:true})}`:""}${z.hora?` a las ${z.hora}`:""}`;
+}
+$("fZepp").addEventListener("paste",e=>{ const t=(e.clipboardData||window.clipboardData)?.getData("text"); if(t){ e.preventDefault(); $("fZepp").value=t; aplicarZepp(t);} });
+$("fZepp").addEventListener("change",()=>aplicarZepp($("fZepp").value));
+$("fPeso").addEventListener("input",()=>{ st.zepp=false; });
+
+$("fRec").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const iny=$("tIny").checked, pes=$("tPeso").checked, rev=$("tRev").checked;
+  const fecha=$("fFecha").value||null, peso=parseFloat($("fPeso").value), cin=parseFloat($("fCin").value);
+  if(!iny&&!pes&&!rev&&!$("fObs").value.trim()){ toast("Marca inyección, peso o revisión"); return; }
+  if(!fecha&&!st.editId){ toast("Indica la fecha"); return; }
+  if(pes&&!isNaN(peso)&&(peso<30||peso>300)){ toast("Revisa el peso: debe estar entre 30 y 300 kg"); return; }
+  const prev=st.editId?st.recs.find(r=>r.id===st.editId):null;
+  const doc={ fecha, dosis: iny?parseFloat($("fDosis").value):null, clics: iny&&$("fClics").value!==""?parseInt($("fClics").value,10):null,
+    peso: pes&&!isNaN(peso)?peso:null, cintura: pes&&!isNaN(cin)?cin:null, revision: rev,
+    lugar: rev?$("fLugar").value:"Domicilio", obs:$("fObs").value.trim(),
+    origen: st.zepp?"Zepp Life":(prev?.origen&&prev.origen!=="Zepp Life"?prev.origen:(prev?.origen==="Zepp Life"&&prev.peso===peso?"Zepp Life":"App")),
+    orden: prev?.orden ?? Date.now() };
+  if(!fecha&&prev?.fechaAprox) doc.fechaAprox=prev.fechaAprox;
+  $("fGuardar").disabled=true;
+  if(st.editId){ const i=st.recs.findIndex(r=>r.id===st.editId); st.recs[i]={id:st.editId,...doc}; } else st.recs.push({id:nuevoId(),...doc});
+  $("fGuardar").disabled=false;
+  if(guardar()){ cerrar(); pintar(); toast("Guardado"); }
+});
+$("fBorrar").onclick=()=>{ $("fConfirm").hidden=false; };
+$("fBorrarNo").onclick=()=>{ $("fConfirm").hidden=true; };
+$("fBorrarSi").onclick=()=>{ st.recs=st.recs.filter(r=>r.id!==st.editId); guardar(); cerrar(); pintar(); toast("Registro borrado"); };
+
+$("cfgForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const t=parseFloat($("cfgTalla").value);
+  st.cfg={nombre:$("cfgNombre").value.trim(),talla:isNaN(t)?null:t}; if(guardar()){ pintar(); toast("Datos guardados"); }
+});
+
+/* ---------- Excel ---------- */
+function cargarExcelJS(){ return window.ExcelJS?Promise.resolve(window.ExcelJS):new Promise((ok,ko)=>{ const sc=document.createElement("script"); sc.src="exceljs.min.js"; sc.onload=()=>ok(window.ExcelJS); sc.onerror=ko; document.head.append(sc); }); }
+$("btnExcel").onclick=async()=>{
+  const b=$("btnExcel"); if(!st.recs.length){ toast("No hay registros que exportar"); return; }
+  b.disabled=true; b.textContent="Preparando…";
+  try{
+    const X=await cargarExcelJS(); const s=calcular(st.recs,st.cfg);
+    const wb=construirExcel(X,st.recs,st.cfg,graficaPng(s.pesos)); const buf=await wb.xlsx.writeBuffer();
+    const nom=(st.cfg.nombre||"Paciente").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_");
+    const XT="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    const r=await compartirArchivo(`Seguimiento_Wegovy_${nom}_${todayIso()}.xlsx`,new Blob([buf],{type:XT}),XT);
+    if(r==="ok") toast("Excel listo");
+  }catch(err){ toast("No se pudo crear el Excel. Inténtalo de nuevo."); }
+  finally{ b.disabled=false; b.textContent="Descargar Excel"; }
+};
+
+/* ---------- Pegar de Zepp ---------- */
+$("btnPegar").onclick=async()=>{
+  try{ const t=await navigator.clipboard.readText(); if(!t){ $("zeppMsg").textContent="El portapapeles está vacío. Ejecuta antes el atajo."; return; } $("fZepp").value=t; aplicarZepp(t); }
+  catch(e){ $("zeppMsg").textContent="No se pudo leer el portapapeles. Mantén pulsado el campo y elige Pegar."; $("fZepp").focus(); }
+};
+
+/* ---------- Copia de seguridad ---------- */
+function infoCopia(){ $("copiaInfo").textContent= st.copia?`Última copia guardada: ${fmtFecha(st.copia,{year:true})}.`:"Todavía no has guardado ninguna copia."; }
+$("btnCopia").onclick=async()=>{
+  const datos={app:"Diario Wegovy",version:1,exportado:new Date().toISOString(),cfg:st.cfg,registros:st.recs};
+  const r=await compartirArchivo(`Copia_Diario_Wegovy_${todayIso()}.json`,new Blob([JSON.stringify(datos,null,1)],{type:"application/json"}),"application/json");
+  if(r==="ok"){ st.copia=todayIso(); guardar(); infoCopia(); toast("Copia lista"); }
+};
+let pendiente=null;
+function leerCopia(input){
+  const f=input.files&&input.files[0]; input.value=""; if(!f) return;
+  const fr=new FileReader();
+  fr.onload=()=>{ try{
+      const j=JSON.parse(fr.result); const regs=j.registros||j.recs;
+      if(!Array.isArray(regs)) throw 0;
+      pendiente={cfg:j.cfg||st.cfg, recs:regs.map(r=>({...r,id:r.id||nuevoId()}))};
+      if(!st.recs.length){ aplicarCopia(); return; }
+      $("impTexto").textContent=`El archivo tiene ${pendiente.recs.length} registros. ¿Sustituir los ${st.recs.length} registros actuales de este iPhone?`;
+      $("impConfirm").hidden=false; $("impConfirm").closest("details").open=true;
+    }catch(e){ toast("Ese archivo no es una copia del Diario Wegovy"); } };
+  fr.readAsText(f);
+}
+function aplicarCopia(){ if(!pendiente) return; st.recs=pendiente.recs; st.cfg=pendiente.cfg; pendiente=null; $("impConfirm").hidden=true; guardar(); pintar(); toast(`Cargados ${st.recs.length} registros`); }
+$("impCopia").addEventListener("change",e=>leerCopia(e.target));
+$("impBienvenida").addEventListener("change",e=>leerCopia(e.target));
+$("impSi").onclick=aplicarCopia; $("impNo").onclick=()=>{ pendiente=null; $("impConfirm").hidden=true; };
+
+/* ---------- Arranque ---------- */
+const pintarBase=pintar;
+pintar=function(){ pintarBase(); $("bienvenida").hidden=st.recs.length>0; infoCopia();
+  const standalone=window.navigator.standalone||matchMedia("(display-mode: standalone)").matches; $("instalar").hidden=!!standalone; };
+cargar(); pintar();
+window.addEventListener("resize",()=>{ clearTimeout(pintar._r); pintar._r=setTimeout(pintar,150); });
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",()=>pintar());
+if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+if("serviceWorker" in navigator) addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+</script>
+</body>
+</html>
